@@ -16,12 +16,26 @@ export type AnonymizeResult = {
   count: number;
 };
 
-/** 기관 명부. 운영 시에는 대기 명단에서 로드한다. */
-function buildRoster(): Record<string, string> {
-  const roster: Record<string, string> = {};
-  for (const w of DEFAULT_WAITLIST) roster[w.alias] = w.childId;
-  roster[OUTPATIENT_DAY.alias] = OUTPATIENT_DAY.childId;
-  return roster;
+type RosterEntry = { pattern: string; token: string; display: string };
+
+/**
+ * 기관 명부. 운영 시에는 대기 명단에서 로드한다.
+ *
+ * 현장 결석 문자는 실명 대신 "OOO" 마스킹 표기와 등록번호로 대상자를 지칭하는 경우가
+ * 많다. 등록번호도 명부 대조 방식으로 치환한다 — 정규식 추측이 아니라 알려진 등록번호와
+ * 정확히 일치할 때만 치환하므로 오탐(false positive) 위험이 없다.
+ * 치환 후 화면에 복원되는 값은 항상 표시용 별칭이며, 원문에 등장한 등록번호 자체는
+ * 매핑에 남기지 않는다.
+ */
+function buildRoster(): RosterEntry[] {
+  const rows: RosterEntry[] = [];
+  const add = (regNumber: string, alias: string, childId: string) => {
+    rows.push({ pattern: regNumber, token: childId, display: alias });
+    rows.push({ pattern: alias, token: childId, display: alias });
+  };
+  for (const w of DEFAULT_WAITLIST) add(w.regNumber, w.alias, w.childId);
+  add(OUTPATIENT_DAY.regNumber, OUTPATIENT_DAY.alias, OUTPATIENT_DAY.childId);
+  return rows;
 }
 
 const PATTERNS: [string, RegExp][] = [
@@ -36,11 +50,12 @@ export function anonymize(text: string): AnonymizeResult {
   let out = text;
 
   // 1) 명부 기반 치환 — 신뢰도가 가장 높으므로 먼저 적용
-  const roster = buildRoster();
-  for (const [name, token] of Object.entries(roster)) {
-    if (out.includes(name)) {
-      out = out.split(name).join(token);
-      mapping[token] = name;
+  //    긴 패턴부터 치환해 짧은 패턴이 긴 패턴의 일부를 먼저 먹어치우지 않게 한다
+  const roster = buildRoster().sort((a, b) => b.pattern.length - a.pattern.length);
+  for (const { pattern, token, display } of roster) {
+    if (out.includes(pattern)) {
+      out = out.split(pattern).join(token);
+      mapping[token] = display;
     }
   }
 

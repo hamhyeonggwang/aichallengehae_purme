@@ -73,7 +73,8 @@ type Therapist = {
 /** 대기 1건 = 대상자 × 종목. CSV 한 줄에 대응 */
 type WaitEntry = {
   childId: string;
-  alias: string;              // 실명 금지
+  regNumber: string;           // 등록번호. 4~5자리. 현장 결석 문자에 실제 등장 — 실명 아님
+  alias: string;               // 실명 금지
   admissionType: '입원' | '낮병동';
   therapy: TherapyCode;
   remaining: number;          // 잔여 기회
@@ -102,13 +103,14 @@ type WaitEntry = {
 ## 3. CSV 스키마 — 이식 계약
 
 ```csv
-child_id,alias,admission_type,therapy,remaining,waiting_days,busy_times
-C-01,아동 가,입원,HYDRO,1,19,10:00|14:00
+child_id,reg_number,alias,admission_type,therapy,remaining,waiting_days,busy_times
+C-01,10101,아동 가,입원,HYDRO,1,19,10:00|14:00
 ```
 
 | 열 | 형식 | 비고 |
 |---|---|---|
 | `child_id` | 문자열 | 내부 식별자. 실명 금지 |
+| `reg_number` | 숫자 4~5자리 | 등록번호. 현장 결석 문자에서 대상자 식별에 실제 쓰이는 값. 익명화 명부 대조 키로 사용 |
 | `alias` | 문자열 | 화면 표시용 |
 | `admission_type` | `입원` \| `낮병동` | 당일 이용 가능 여부 |
 | `therapy` | TherapyCode | 위 표 참조 |

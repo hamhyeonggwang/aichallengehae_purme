@@ -7,13 +7,13 @@ import { WaitEntry, TherapyCode, THERAPIES } from './mockData';
  * 아래 헤더 형식에 맞춘 CSV만 내보내면 그대로 사용할 수 있다.
  *
  * 헤더:
- *   child_id,alias,admission_type,therapy,remaining,waiting_days,busy_times
+ *   child_id,reg_number,alias,admission_type,therapy,remaining,waiting_days,busy_times
  * 예:
- *   C-01,아동 가,입원,HYDRO,1,19,10:00|14:00
+ *   C-01,10101,아동 가,입원,HYDRO,1,19,10:00|14:00
  */
 
 export const CSV_HEADER =
-  'child_id,alias,admission_type,therapy,remaining,waiting_days,busy_times';
+  'child_id,reg_number,alias,admission_type,therapy,remaining,waiting_days,busy_times';
 
 export type ParseReport = {
   entries: WaitEntry[];
@@ -36,12 +36,12 @@ export function parseWaitlistCsv(raw: string): ParseReport {
     const cols = lines[i].split(',').map((c) => c.trim());
     const lineNo = i + 1;
 
-    if (cols.length < 6) {
+    if (cols.length < 7) {
       skipped.push({ line: lineNo, reason: '열 개수 부족' });
       continue;
     }
 
-    const [childId, alias, admission, therapy, remainingStr, waitingStr, busyStr] = cols;
+    const [childId, regNumber, alias, admission, therapy, remainingStr, waitingStr, busyStr] = cols;
 
     if (!VALID_CODES.has(therapy as TherapyCode)) {
       skipped.push({ line: lineNo, reason: `알 수 없는 치료 코드: ${therapy}` });
@@ -61,6 +61,7 @@ export function parseWaitlistCsv(raw: string): ParseReport {
 
     entries.push({
       childId,
+      regNumber,
       alias,
       admissionType: admission,
       therapy: therapy as TherapyCode,
@@ -76,7 +77,7 @@ export function parseWaitlistCsv(raw: string): ParseReport {
 /** 샘플 CSV 생성 — 사용자가 형식을 바로 확인할 수 있도록 */
 export function buildSampleCsv(entries: WaitEntry[]): string {
   const rows = entries.map((e) =>
-    [e.childId, e.alias, e.admissionType, e.therapy, e.remaining, e.waitingDays,
+    [e.childId, e.regNumber, e.alias, e.admissionType, e.therapy, e.remaining, e.waitingDays,
       e.busyTimes.join('|')].join(','),
   );
   return [CSV_HEADER, ...rows].join('\n');

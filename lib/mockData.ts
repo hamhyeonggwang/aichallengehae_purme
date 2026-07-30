@@ -73,6 +73,7 @@ export const therapistById = (id: string) => THERAPISTS.find((t) => t.id === id)
  */
 export type WaitEntry = {
   childId: string;
+  regNumber: string;   // 등록번호. 현장 결석 문자에 실제로 등장하는 4~5자리 식별자 — 실명이 아니다
   alias: string;
   admissionType: '입원' | '낮병동'; // 타 기관에서는 "당일 이용 가능" 구분에 대응
   therapy: TherapyCode;
@@ -82,20 +83,20 @@ export type WaitEntry = {
 };
 
 export const DEFAULT_WAITLIST: WaitEntry[] = [
-  { childId: 'C-01', alias: '아동 가', admissionType: '입원',   therapy: 'PT_BASIC', remaining: 2, waitingDays: 12, busyTimes: ['10:00', '14:00'] },
-  { childId: 'C-01', alias: '아동 가', admissionType: '입원',   therapy: 'HYDRO',    remaining: 1, waitingDays: 19, busyTimes: ['10:00', '14:00'] },
-  { childId: 'C-02', alias: '아동 나', admissionType: '낮병동', therapy: 'PT_BASIC', remaining: 6, waitingDays: 3,  busyTimes: ['11:00'] },
-  { childId: 'C-02', alias: '아동 나', admissionType: '낮병동', therapy: 'SI',       remaining: 4, waitingDays: 9,  busyTimes: ['11:00'] },
-  { childId: 'C-03', alias: '아동 다', admissionType: '입원',   therapy: 'PT_BASIC', remaining: 4, waitingDays: 21, busyTimes: ['09:30'] },
-  { childId: 'C-03', alias: '아동 다', admissionType: '입원',   therapy: 'ROBOT',    remaining: 3, waitingDays: 25, busyTimes: ['09:30'] },
-  { childId: 'C-04', alias: '아동 라', admissionType: '낮병동', therapy: 'PT_BASIC', remaining: 1, waitingDays: 8,  busyTimes: ['15:00'] },
-  { childId: 'C-04', alias: '아동 라', admissionType: '낮병동', therapy: 'COG',      remaining: 5, waitingDays: 6,  busyTimes: ['15:00'] },
-  { childId: 'C-05', alias: '아동 마', admissionType: '입원',   therapy: 'OT_BASIC', remaining: 3, waitingDays: 14, busyTimes: [] },
-  { childId: 'C-05', alias: '아동 마', admissionType: '입원',   therapy: 'SWALLOW',  remaining: 2, waitingDays: 30, busyTimes: [] },
-  { childId: 'C-06', alias: '아동 바', admissionType: '낮병동', therapy: 'PT_BASIC', remaining: 7, waitingDays: 2,  busyTimes: ['13:30', '16:00'] },
-  { childId: 'C-06', alias: '아동 바', admissionType: '낮병동', therapy: 'EQUIP',    remaining: 2, waitingDays: 17, busyTimes: ['13:30', '16:00'] },
-  { childId: 'C-07', alias: '아동 사', admissionType: '입원',   therapy: 'SI',       remaining: 1, waitingDays: 11, busyTimes: [] },
-  { childId: 'C-08', alias: '아동 아', admissionType: '낮병동', therapy: 'HYDRO',    remaining: 2, waitingDays: 22, busyTimes: ['14:30'] },
+  { childId: 'C-01', regNumber: '10101', alias: '아동 가', admissionType: '입원',   therapy: 'PT_BASIC', remaining: 2, waitingDays: 12, busyTimes: ['10:00', '14:00'] },
+  { childId: 'C-01', regNumber: '10101', alias: '아동 가', admissionType: '입원',   therapy: 'HYDRO',    remaining: 1, waitingDays: 19, busyTimes: ['10:00', '14:00'] },
+  { childId: 'C-02', regNumber: '10102', alias: '아동 나', admissionType: '낮병동', therapy: 'PT_BASIC', remaining: 6, waitingDays: 3,  busyTimes: ['11:00'] },
+  { childId: 'C-02', regNumber: '10102', alias: '아동 나', admissionType: '낮병동', therapy: 'SI',       remaining: 4, waitingDays: 9,  busyTimes: ['11:00'] },
+  { childId: 'C-03', regNumber: '10103', alias: '아동 다', admissionType: '입원',   therapy: 'PT_BASIC', remaining: 4, waitingDays: 21, busyTimes: ['09:30'] },
+  { childId: 'C-03', regNumber: '10103', alias: '아동 다', admissionType: '입원',   therapy: 'ROBOT',    remaining: 3, waitingDays: 25, busyTimes: ['09:30'] },
+  { childId: 'C-04', regNumber: '10104', alias: '아동 라', admissionType: '낮병동', therapy: 'PT_BASIC', remaining: 1, waitingDays: 8,  busyTimes: ['15:00'] },
+  { childId: 'C-04', regNumber: '10104', alias: '아동 라', admissionType: '낮병동', therapy: 'COG',      remaining: 5, waitingDays: 6,  busyTimes: ['15:00'] },
+  { childId: 'C-05', regNumber: '10105', alias: '아동 마', admissionType: '입원',   therapy: 'OT_BASIC', remaining: 3, waitingDays: 14, busyTimes: [] },
+  { childId: 'C-05', regNumber: '10105', alias: '아동 마', admissionType: '입원',   therapy: 'SWALLOW',  remaining: 2, waitingDays: 30, busyTimes: [] },
+  { childId: 'C-06', regNumber: '10106', alias: '아동 바', admissionType: '낮병동', therapy: 'PT_BASIC', remaining: 7, waitingDays: 2,  busyTimes: ['13:30', '16:00'] },
+  { childId: 'C-06', regNumber: '10106', alias: '아동 바', admissionType: '낮병동', therapy: 'EQUIP',    remaining: 2, waitingDays: 17, busyTimes: ['13:30', '16:00'] },
+  { childId: 'C-07', regNumber: '10107', alias: '아동 사', admissionType: '입원',   therapy: 'SI',       remaining: 1, waitingDays: 11, busyTimes: [] },
+  { childId: 'C-08', regNumber: '10108', alias: '아동 아', admissionType: '낮병동', therapy: 'HYDRO',    remaining: 2, waitingDays: 22, busyTimes: ['14:30'] },
 ];
 
 /** 외래 아동의 하루 일정 — 결석 시 이 4건이 한꺼번에 빈다 */
@@ -107,6 +108,7 @@ export type OutpatientSession = {
 
 export const OUTPATIENT_DAY = {
   childId: 'C-09', // 익명화 토큰. 대기 명단의 child_id와 같은 체계를 쓴다
+  regNumber: '10109', // 등록번호. 결석 문자에는 이 번호로 등장한다
   alias: '아동 자',
   sessions: [
     { time: '14:00', therapy: 'PT_BASIC', therapistId: 'PT-03' },
@@ -120,7 +122,7 @@ export const SAMPLE_MESSAGES = [
   {
     level: '기본',
     note: '전체 결석 · 대상 명시',
-    text: '안녕하세요 아동 자 보호자입니다. 오늘 오후 치료 전체 못 갑니다.',
+    text: '안녕하세요 OOO 보호자입니다(등록번호 10109). 오늘 오후 치료 전체 못 갑니다.',
   },
   {
     level: '생략',

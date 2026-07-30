@@ -102,7 +102,7 @@
 
 | 단계 | 성격 | 문장 |
 |---|---|---|
-| 기본 | 전체 결석·대상 명시 | "아동 자 보호자입니다. 오늘 오후 치료 전체 못 갑니다." |
+| 기본 | 전체 결석·대상 명시 | "OOO 보호자입니다(등록번호 10109). 오늘 오후 치료 전체 못 갑니다." |
 | 생략 | 시각·치료명 없음 | "애가 새벽부터 열이 나서 오늘 못 갈 것 같아요ㅠㅠ 다음주 화요일쯤은…" |
 | **부분 결석** | **4건 중 2건만 취소** | "오늘 수치료랑 감통만 빼주세요. 물리치료랑 작업치료는 그대로 받을게요!" |
 
@@ -190,6 +190,7 @@ type Therapist = {
 /** 대기 1건 = 대상자 × 종목. CSV 한 줄에 대응 */
 type WaitEntry = {
   childId: string;
+  regNumber: string;          // 등록번호 4~5자리. 현장 결석 문자에 실제 등장 — 실명 아님
   alias: string;              // 실명 금지
   admissionType: '입원' | '낮병동';
   therapy: TherapyCode;
@@ -202,8 +203,8 @@ type WaitEntry = {
 ### CSV 스키마 (이식 계약)
 
 ```csv
-child_id,alias,admission_type,therapy,remaining,waiting_days,busy_times
-C-01,아동 가,입원,HYDRO,1,19,10:00|14:00
+child_id,reg_number,alias,admission_type,therapy,remaining,waiting_days,busy_times
+C-01,10101,아동 가,입원,HYDRO,1,19,10:00|14:00
 ```
 
 `remaining`은 **잔여 기회**다. 재활병원에서는 잔여 처방 회기지만

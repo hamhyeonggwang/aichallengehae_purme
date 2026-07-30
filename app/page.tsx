@@ -298,11 +298,13 @@ function Header() {
   ];
   return (
     <header className="mb-8">
-      <p className="text-[13px] font-semibold tracking-wide text-teal">결석 회기 회수 어시스턴트</p>
-      <h1 className="mt-1.5 text-[30px] font-bold leading-tight sm:text-[36px]">보강 브릿지</h1>
+      <p className="text-[13px] font-semibold tracking-wide text-teal">치료 재배정 보조 시스템</p>
+      <h1 className="mt-1.5 text-[30px] font-bold leading-tight sm:text-[36px]">혹시 지금 자리 있나요</h1>
+      <p className="mt-1 text-[15px] font-semibold text-ink">보강 브릿지</p>
       <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
-        결석으로 비는 치료 회기를, 대기 중인 재원 아동에게 연결합니다.
-        빈 회기도 알고 대기자도 아는데 둘을 잇는 일만 사람 손에 남아 있는 상태를 바꿉니다.
+        보호자가 가장 많이 하는 질문입니다. 치료가 취소되면 그 시간은 비고, 같은 시간에
+        그 치료를 기다리는 아동이 있습니다. 현장에서는 이 연결을 &apos;보강&apos;이라 부릅니다.
+        후보를 찾는 일은 자동으로, 배정은 담당자가 결정합니다.
       </p>
       <dl className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl2 border border-line bg-line sm:grid-cols-4">
         {stats.map((s) => (
