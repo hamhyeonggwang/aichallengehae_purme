@@ -1,4 +1,4 @@
-child_id,reg_number,alias,admission_type,therapy,remaining,waiting_days,busy_times
+﻿child_id,reg_number,alias,admission_type,therapy,remaining,waiting_days,busy_times
 C-01,10101,아동 가,입원,PT_BASIC,2,12,10:00|14:00
 C-01,10101,아동 가,입원,HYDRO,1,19,10:00|14:00
 C-02,10102,아동 나,낮병동,PT_BASIC,6,3,11:00

@@ -26,7 +26,10 @@ export function parseWaitlistCsv(raw: string): ParseReport {
   const entries: WaitEntry[] = [];
   const skipped: { line: number; reason: string }[] = [];
 
-  const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  // 엑셀이 "CSV UTF-8"로 저장하면 파일 맨 앞에 BOM이 붙는다. 재업로드 시 첫 헤더 값이
+  // 깨지지 않도록 제거한다.
+  const text = raw.replace(/^﻿/, '');
+  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (lines.length === 0) return { entries, skipped };
 
   // 헤더 유무 판별
