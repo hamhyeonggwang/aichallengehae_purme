@@ -64,7 +64,10 @@ export async function POST(req: NextRequest) {
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return NextResponse.json(fallbackParse(text) satisfies ExtractResult);
+  if (!apiKey) {
+    console.error('GEMINI_API_KEY 미설정 — 폴백으로 전환');
+    return NextResponse.json(fallbackParse(text) satisfies ExtractResult);
+  }
 
   try {
     const controller = new AbortController();
