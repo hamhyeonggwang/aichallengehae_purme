@@ -1,0 +1,363 @@
+{
+  "name": "보강 브릿지 — 결석 회기 회수 (익명화 포함)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "absence-intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "n01",
+      "name": "결석 접수 수신",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        300
+      ],
+      "webhookId": "absence-intake",
+      "notes": "코디네이터·치료사·보호자 어느 쪽이든 이 하나로 수렴한다."
+    },
+    {
+      "parameters": {
+        "jsCode": "// 접수 지점이 고정되어 있지 않다.\n// 보호자 문자 · 코디네이터 입력 · 치료사 전달이 모두 여기로 수렴한다.\nconst items = $input.all();\nreturn items.map((item) => {\n  const b = item.json.body ?? item.json;\n  const text = b.text ?? b.message ?? b.content ?? '';\n  return {\n    json: {\n      text: String(text).trim(),\n      submittedBy: b.submittedBy ?? b.role ?? 'unknown', // coordinator | therapist | guardian\n      channel: b.channel ?? 'sms',\n      receivedAt: new Date().toISOString(),\n    },\n  };\n});"
+      },
+      "id": "n02",
+      "name": "입력 정규화",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -680,
+        300
+      ],
+      "notes": "접수 지점 비결정성을 흡수하는 지점"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "\"\"\"\n익명화 전처리 — 식별정보를 토큰으로 치환한다.\n\n이 노드를 통과한 뒤로는 어떤 모델도 실명·연락처를 보지 않는다.\n따라서 모델 선택(로컬/외부)이 개인정보 경계와 분리된다.\n\n매핑 테이블은 이 실행 컨텍스트 안에만 존재하며 외부로 전송되지 않는다.\n\"\"\"\nimport re\n\n# 기관 내부 명부. 운영 시에는 대기 명단 CSV에서 로드한다.\nROSTER = {\n    \"아동 가\": \"C-01\", \"아동 나\": \"C-02\", \"아동 다\": \"C-03\",\n    \"아동 라\": \"C-04\", \"아동 마\": \"C-05\", \"아동 바\": \"C-06\",\n    \"아동 사\": \"C-07\", \"아동 아\": \"C-08\", \"아동 자\": \"C-09\",\n}\n\nPATTERNS = [\n    (\"PHONE\",  re.compile(r\"01[016789][-\\s]?\\d{3,4}[-\\s]?\\d{4}\")),\n    (\"RRN\",    re.compile(r\"\\d{6}[-\\s]?[1-4]\\d{6}\")),\n    (\"BIRTH\",  re.compile(r\"(19|20)\\d{2}[.\\-/년\\s]\\s?\\d{1,2}[.\\-/월\\s]\\s?\\d{1,2}\\s?일?\")),\n    (\"CHART\",  re.compile(r\"(등록번호|차트번호)\\s*[:：]?\\s*\\d{4,}\")),\n]\n\nout = []\nfor item in _input.all():\n    data = item[\"json\"] if isinstance(item, dict) else item.json\n    text = str(data.get(\"text\", \"\"))\n    mapping = {}\n\n    # 1) 명부 기반 치환 — 신뢰도가 가장 높으므로 먼저 적용\n    for name, token in ROSTER.items():\n        if name in text:\n            text = text.replace(name, token)\n            mapping[token] = name\n\n    # 2) 패턴 기반 치환\n    counters = {}\n    for kind, rx in PATTERNS:\n        def repl(m):\n            counters[kind] = counters.get(kind, 0) + 1\n            token = \"<%s_%d>\" % (kind, counters[kind])\n            mapping[token] = m.group(0)\n            return token\n        text = rx.sub(repl, text)\n\n    out.append({\n        \"json\": {\n            \"anonymizedText\": text,\n            \"mapping\": mapping,            # 내부 전용. 외부 노드로 넘기지 않는다\n            \"identifiersFound\": len(mapping),\n            \"submittedBy\": data.get(\"submittedBy\", \"unknown\"),\n            \"channel\": data.get(\"channel\", \"sms\"),\n            \"receivedAt\": data.get(\"receivedAt\"),\n        }\n    })\n\nreturn out"
+      },
+      "id": "n03",
+      "name": "익명화 전처리 (Python)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -460,
+        300
+      ],
+      "notes": "이 노드 이후로 실명은 파이프라인에 존재하지 않는다."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'qwen2.5:7b', stream: false, format: 'json', prompt: '다음 결석 안내에서 항목을 뽑아 JSON으로만 답하라. 명시되지 않은 항목은 null. 필드: subjectToken, date, scope(all|partial), cancelledTherapies(코드배열), reason. 치료코드: PT_BASIC 물리치료, HYDRO 수치료, ROBOT 로봇치료, EQUIP 기구치료, OT_BASIC 작업치료, COG 전산화인지치료, SI 감각통합치료, SWALLOW 연하치료.\\n\\n내용: ' + $json.anonymizedText }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "n04",
+      "name": "모델 추출",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -240,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "notes": "익명 텍스트만 전달된다. 로컬/외부 모델 교체가 개인정보 경계에 영향을 주지 않는다."
+    },
+    {
+      "parameters": {
+        "jsCode": "// 모델 응답에서 JSON만 뽑는다. 실패하면 정규식 폴백으로 내려간다.\nconst THERAPIES = [\n  { code: 'PT_BASIC', aliases: ['물리', '물리치료', 'PT', '피티'] },\n  { code: 'HYDRO',    aliases: ['수치료', '물속치료', '풀'] },\n  { code: 'ROBOT',    aliases: ['로봇', '로봇치료', '보행로봇'] },\n  { code: 'EQUIP',    aliases: ['기구', '기구치료'] },\n  { code: 'OT_BASIC', aliases: ['작업', '작업치료', 'OT', '오티'] },\n  { code: 'COG',      aliases: ['인지', '전산화인지', '인지치료'] },\n  { code: 'SI',       aliases: ['감통', '감각통합', '감각치료'] },\n  { code: 'SWALLOW',  aliases: ['연하', '삼킴', '연하치료'] },\n];\n\nfunction fallback(text) {\n  const mentioned = THERAPIES.filter(t => t.aliases.some(a => text.includes(a))).map(t => t.code);\n  const onlyMarker = /만\\s*(빼|빠|제외|취소)/.test(text);\n  const allMarker  = /(전체|모두|다)\\s*(못|안|결석|취소)/.test(text);\n  // 유지 표지가 함께 있으면 규칙만으로는 결석 대상을 특정할 수 없다 — 오판 대신 기권 (웹 fallbackParser.ts와 동일)\n  const keepMarker = /그대로|[은는]\\s*(받|올|갈)/.test(text);\n  const dateWord   = (text.match(/(오늘|내일|모레)/) || [])[1] || null;\n  const idToken    = (text.match(/C-\\d{2}/) || [])[0] || null;\n  let scope = null, cancelled = null;\n  if (allMarker && mentioned.length === 0) scope = 'all';\n  else if (onlyMarker && mentioned.length > 0 && !keepMarker) { scope = 'partial'; cancelled = mentioned; }\n  return {\n    fields: { subjectToken: idToken, date: dateWord, scope, cancelledTherapies: cancelled, reason: null },\n    source: 'fallback',\n  };\n}\n\nconst anon = $('익명화 전처리 (Python)').first().json;\nconst out = [];\nfor (const item of $input.all()) {\n  let parsed = null;\n  try {\n    const raw = String(item.json.response ?? '').replace(/```json|```/g, '').trim();\n    const j = JSON.parse(raw);\n    if (j && j.fields) parsed = { fields: j.fields, confidence: j.confidence ?? {}, source: 'ai' };\n  } catch (e) { parsed = null; }\n  if (!parsed) parsed = fallback(anon.anonymizedText);\n  out.push({ json: { ...parsed, anonymizedText: anon.anonymizedText } });\n}\nreturn out;"
+      },
+      "id": "n05",
+      "name": "추출 결과 파싱",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -20,
+        300
+      ],
+      "notes": "JSON 실패 시 정규식 폴백"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/data/waitlist.csv",
+        "options": {}
+      },
+      "id": "n06",
+      "name": "대기 명단 읽기",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        520
+      ],
+      "notes": "기관이 내보낸 CSV. 스키마만 맞추면 어느 기관이든 동일하게 동작한다."
+    },
+    {
+      "parameters": {
+        "operation": "csv",
+        "options": {
+          "headerRow": true
+        }
+      },
+      "id": "n07",
+      "name": "대기 명단 파싱",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        200,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 매칭 규칙 엔진 — AI를 호출하지 않는다. 전부 결정론적이다.\n// 이 노드는 토큰만 다룬다. 실명은 등장하지 않는다.\n// 웹 프로토타입 lib/matcher.ts 와 동일한 규칙을 사용한다.\n\nconst OUTPATIENT_SESSIONS = [\n  { time: '14:00', therapy: 'PT_BASIC', staff: 'PT-03' },\n  { time: '14:30', therapy: 'HYDRO',    staff: 'PT-04' },\n  { time: '15:00', therapy: 'OT_BASIC', staff: 'OT-07' },\n  { time: '15:30', therapy: 'SI',       staff: 'OT-11' },\n];\n\nconst extract = $('추출 결과 파싱').first().json;\nconst waitRows = $('대기 명단 파싱').all().map(i => i.json);\n\n// 1) 결석으로 비는 회기 확정\nlet openSlots = [];\nif (extract.fields.scope === 'all') {\n  openSlots = OUTPATIENT_SESSIONS;\n} else if (extract.fields.scope === 'partial' && Array.isArray(extract.fields.cancelledTherapies)) {\n  const set = new Set(extract.fields.cancelledTherapies);\n  openSlots = OUTPATIENT_SESSIONS.filter(s => set.has(s.therapy));\n}\n\n// 2) 회기별 후보 매칭\nconst results = openSlots.map((slot) => {\n  const passed = [];\n  const excluded = [];\n  for (const w of waitRows) {\n    if (w.therapy !== slot.therapy) continue;\n    const remaining = Number(w.remaining);\n    if (!(remaining > 0)) { excluded.push({ token: w.child_id, cause: '잔여 기회 없음' }); continue; }\n    const busy = String(w.busy_times ?? '').split('|').map(s => s.trim()).filter(Boolean);\n    if (busy.includes(slot.time)) { excluded.push({ token: w.child_id, cause: slot.time + ' 다른 일정' }); continue; }\n    passed.push({ ...w, remaining, waiting_days: Number(w.waiting_days) });\n  }\n  // 우선순위: 잔여 기회 적은 순 → 대기 긴 순 → id 오름차순 (재현성 보장)\n  // 수익성이나 배정 용이성이 아니라 형평 기준으로 정렬한다.\n  passed.sort((a, b) =>\n    (a.remaining - b.remaining) ||\n    (b.waiting_days - a.waiting_days) ||\n    String(a.child_id).localeCompare(String(b.child_id))\n  );\n  return { ...slot, candidates: passed.slice(0, 3), excluded };\n});\n\nreturn [{ json: {\n  scope: extract.fields.scope,\n  source: extract.source,\n  openSlotCount: openSlots.length,\n  slots: results,\n  hasCandidate: results.some(r => r.candidates.length > 0),\n} }];"
+      },
+      "id": "n08",
+      "name": "매칭 규칙 엔진",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        400
+      ],
+      "notes": "AI 미호출. 토큰만 다룬다."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.hasCandidate }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n09",
+      "name": "후보 있음?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        640,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "\"\"\"\n재식별 매칭 — 발송 직전 단계.\n\n여기까지 토큰으로만 처리해 온 결과를 실제 대상자에게 다시 연결한다.\n파이프라인에서 실명이 등장하는 유일한 지점이며, 출력은 승인 큐로만 나간다.\n\"\"\"\nNAME = {\n    \"PT_BASIC\": \"물리치료\", \"HYDRO\": \"수치료\", \"ROBOT\": \"로봇치료\", \"EQUIP\": \"기구치료\",\n    \"OT_BASIC\": \"작업치료\", \"COG\": \"전산화인지치료\", \"SI\": \"감각통합치료\", \"SWALLOW\": \"연하치료\",\n}\n\nmatched = _input.first()\nmatched = matched[\"json\"] if isinstance(matched, dict) else matched.json\n\nanon = _(\"익명화 전처리 (Python)\").first()\nanon = anon[\"json\"] if isinstance(anon, dict) else anon.json\nmapping = anon.get(\"mapping\", {})\n\n# 대기 명단에서 토큰 → 표시명 사전 구성\nroster = {}\nfor row in _(\"대기 명단 파싱\").all():\n    r = row[\"json\"] if isinstance(row, dict) else row.json\n    roster[r.get(\"child_id\")] = r.get(\"alias\")\n\nresolved = []\nfor slot in matched.get(\"slots\", []):\n    cands = slot.get(\"candidates\", [])\n    if not cands:\n        continue\n    top = cands[0]\n    token = top.get(\"child_id\")\n    resolved.append({\n        \"time\": slot.get(\"time\"),\n        \"therapyName\": NAME.get(slot.get(\"therapy\"), slot.get(\"therapy\")),\n        \"staff\": slot.get(\"staff\"),\n        \"token\": token,\n        \"displayName\": mapping.get(token) or roster.get(token) or token,\n        \"remaining\": top.get(\"remaining\"),\n        \"waitingDays\": top.get(\"waiting_days\"),\n    })\n\nreturn [{\n    \"json\": {\n        \"resolved\": resolved,\n        \"slotCount\": matched.get(\"openSlotCount\", 0),\n        \"source\": matched.get(\"source\"),\n        \"identifiersRestored\": len(resolved),\n    }\n}]"
+      },
+      "id": "n10",
+      "name": "재식별 매칭 (Python)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        300
+      ],
+      "notes": "발송 직전. 파이프라인에서 실명이 등장하는 유일한 지점."
+    },
+    {
+      "parameters": {
+        "jsCode": "// 승인 큐로 보낼 안내문 초안. 발송이 아니라 제안이다.\nconst d = $input.first().json;\nconst lines = d.resolved.map(r =>\n  '· ' + r.time + ' ' + r.therapyName + ' (' + r.staff + ') → '\n  + r.displayName + ' / 잔여 ' + r.remaining + '회 · 대기 ' + r.waitingDays + '일'\n);\nconst message = [\n  '[보강 제안]',\n  '결석으로 아래 회기가 비었습니다. 배정 가능하신지 회신 부탁드립니다.',\n  '',\n  ...lines,\n  '',\n  '※ 확정 아님 · 코디네이터 승인 후 배정됩니다.',\n].join('\\n');\nreturn [{ json: { message, slotCount: d.slotCount, source: d.source, needsApproval: true } }];"
+      },
+      "id": "n11",
+      "name": "안내문 생성",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {}
+      },
+      "id": "n12",
+      "name": "승인 큐로 전달",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        300
+      ],
+      "notes": "자동 발송하지 않는다. 코디네이터 승인 후 배정된다."
+    },
+    {
+      "parameters": {},
+      "id": "n13",
+      "name": "회수 실패 기록",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        860,
+        520
+      ],
+      "notes": "후보를 찾지 못한 건도 기록한다. 계측이 첫 산출물이다."
+    }
+  ],
+  "connections": {
+    "결석 접수 수신": {
+      "main": [
+        [
+          {
+            "node": "입력 정규화",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "입력 정규화": {
+      "main": [
+        [
+          {
+            "node": "익명화 전처리 (Python)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "익명화 전처리 (Python)": {
+      "main": [
+        [
+          {
+            "node": "모델 추출",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "대기 명단 읽기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "모델 추출": {
+      "main": [
+        [
+          {
+            "node": "추출 결과 파싱",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "추출 결과 파싱": {
+      "main": [
+        [
+          {
+            "node": "매칭 규칙 엔진",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "대기 명단 읽기": {
+      "main": [
+        [
+          {
+            "node": "대기 명단 파싱",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "대기 명단 파싱": {
+      "main": [
+        [
+          {
+            "node": "매칭 규칙 엔진",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "매칭 규칙 엔진": {
+      "main": [
+        [
+          {
+            "node": "후보 있음?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "후보 있음?": {
+      "main": [
+        [
+          {
+            "node": "재식별 매칭 (Python)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "회수 실패 기록",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "재식별 매칭 (Python)": {
+      "main": [
+        [
+          {
+            "node": "안내문 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "안내문 생성": {
+      "main": [
+        [
+          {
+            "node": "승인 큐로 전달",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "bogang-bridge-prototype"
+  },
+  "tags": []
+}
