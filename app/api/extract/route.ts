@@ -5,7 +5,7 @@ import { THERAPIES, DEFAULT_WAITLIST, OUTPATIENT_DAY } from '@/lib/mockData';
 export const runtime = 'nodejs';
 export const maxDuration = 15;
 
-const MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
+const MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash-lite';
 
 // 서버에 도착하는 텍스트는 이미 익명화되어 있다. 모델이 보는 대상 식별자는 토큰뿐이다
 const TOKENS = Array.from(
