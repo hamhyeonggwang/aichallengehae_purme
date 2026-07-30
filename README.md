@@ -35,7 +35,7 @@ AI에게 "누가 먼저 치료받는가"를 결정하게 하지 않습니다.
 |---|---|---|
 | 목적 | 심사·시연용 | 기관 내부 실제 실행 |
 | 위치 | Vercel 공개 웹 | 기관 내부망 |
-| 추출 | Claude API (서버 프록시) | Ollama 로컬 |
+| 추출 | Gemini API (서버 프록시) | Ollama 로컬 |
 | 데이터 | 가상 데이터 | 기관 CSV |
 
 **매칭 규칙은 두 경로가 동일합니다.** 웹에서 확인한 결과가 현장에서도 같게 나옵니다.
@@ -47,7 +47,7 @@ AI에게 "누가 먼저 치료받는가"를 결정하게 하지 않습니다.
 
 ```bash
 npm install
-cp .env.example .env.local   # ANTHROPIC_API_KEY 입력
+cp .env.example .env.local   # GEMINI_API_KEY 입력
 npm run dev
 ```
 
@@ -58,8 +58,8 @@ API 키가 없어도 동작합니다. 이 경우 `lib/fallbackParser.ts`의 정�
 
 1. GitHub 저장소 연결
 2. 환경변수 등록
-   - `ANTHROPIC_API_KEY` — **서버 전용.** 클라이언트 번들에 포함되지 않습니다
-   - `ANTHROPIC_MODEL` — 사용 가능한 모델 ID로 조정
+   - `GEMINI_API_KEY` — **서버 전용.** 클라이언트 번들에 포함되지 않습니다 (Google AI Studio에서 무료 발급)
+   - `GEMINI_MODEL` — 사용 가능한 모델 ID로 조정
 3. 배포 후 **시크릿 창**에서 접속 확인 (로그인 벽이 없어야 합니다)
 
 ---
