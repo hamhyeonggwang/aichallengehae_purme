@@ -298,9 +298,8 @@ function Header() {
   ];
   return (
     <header className="mb-8">
-      <p className="text-[13px] font-semibold tracking-wide text-teal">치료 재배정 보조 시스템</p>
+      <p className="text-[13px] font-semibold tracking-wide text-teal">보강 브릿지 · 치료 재배정 보조 시스템</p>
       <h1 className="mt-1.5 text-[30px] font-bold leading-tight sm:text-[36px]">혹시 지금 자리 있나요</h1>
-      <p className="mt-1 text-[15px] font-semibold text-ink">보강 브릿지</p>
       <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
         보호자가 가장 많이 하는 질문입니다. 치료가 취소되면 그 시간은 비고, 같은 시간에
         그 치료를 기다리는 아동이 있습니다. 현장에서는 이 연결을 &apos;보강&apos;이라 부릅니다.
@@ -458,8 +457,8 @@ function RoleSplit() {
     <section className="mt-8 rounded-xl3 border border-line bg-card p-5">
       <h2 className="text-[15px] font-bold">누가 무엇을 하는가</h2>
       <p className="mt-1 text-[13px] leading-relaxed text-muted">
-        AI에게 판단을 맡기지 않습니다. 언어를 다루는 일만 AI가 하고,
-        배정 규칙은 결정론적으로 계산하며, 확정은 사람이 합니다.
+        담당자의 판단을 대신하지 않습니다. 흩어진 정보를 모아 후보와 근거를 정리하는
+        데까지가 도구의 역할이고, 누구에게 배정할지는 담당자가 결정합니다.
       </p>
       <ul className="mt-4 grid gap-2 sm:grid-cols-2">
         {rows.map(([task, who]) => (
