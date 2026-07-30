@@ -298,7 +298,7 @@ function Header() {
   ];
   return (
     <header className="mb-8">
-      <p className="text-[13px] font-semibold tracking-wide text-teal">보강 브릿지 · 치료 재배정 보조 시스템</p>
+      <p className="text-[13px] font-semibold tracking-wide text-teal">치료 재배정 보조 시스템</p>
       <h1 className="mt-1.5 text-[30px] font-bold leading-tight sm:text-[36px]">혹시 지금 자리 있나요</h1>
       <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
         보호자가 가장 많이 하는 질문입니다. 치료가 취소되면 그 시간은 비고, 같은 시간에
