@@ -87,7 +87,10 @@ export async function POST(req: NextRequest) {
       },
     );
     clearTimeout(timer);
-    if (!res.ok) throw new Error(`API ${res.status}`);
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`API ${res.status}: ${body.slice(0, 300)}`);
+    }
 
     const data = await res.json();
     const raw = ((data.candidates?.[0]?.content?.parts ?? []) as { text?: string }[])
@@ -104,7 +107,8 @@ export async function POST(req: NextRequest) {
       confidence: parsed.confidence ?? {},
       source: 'ai',
     } satisfies ExtractResult);
-  } catch {
+  } catch (err) {
+    console.error('Gemini 추출 실패 — 폴백으로 전환:', err instanceof Error ? err.message : err);
     return NextResponse.json(fallbackParse(text) satisfies ExtractResult);
   }
 }
