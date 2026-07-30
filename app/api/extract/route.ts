@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     clearTimeout(timer);
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      throw new Error(`API ${res.status}: ${body.slice(0, 300)}`);
+      throw new Error(`API ${res.status}: ${body.slice(0, 1000)}`);
     }
 
     const data = await res.json();
