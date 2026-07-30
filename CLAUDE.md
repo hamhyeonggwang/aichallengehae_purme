@@ -56,7 +56,7 @@ L1 대비 이 프로젝트에서 더 엄격하게 적용한다.
 - 컴포넌트를 과분할하지 않는다. 단일 페이지 프로토타입이다
 - 상태관리 라이브러리를 도입하지 않는다. `useState`로 충분하다
 - `localStorage` / `sessionStorage`를 사용하지 않는다
-- Gemini API 키를 클라이언트에서 호출하지 않는다. 서버 라우트 경유만 허용
+- Anthropic API 키를 클라이언트에서 호출하지 않는다. 서버 라우트 경유만 허용
 - 매칭 규칙 변경 시 3단계 tie-breaker를 유지한다 (재현성 보장)
 
 ### 완료 판정
@@ -127,7 +127,7 @@ npm run dev          # http://localhost:3000
 npm run build        # 배포 전 검증
 ```
 
-환경변수는 `.env.local`. `GEMINI_API_KEY` 없이도 폴백으로 동작한다.
+환경변수는 `.env.local`. `ANTHROPIC_API_KEY` 없이도 폴백으로 동작한다.
 
 ---
 

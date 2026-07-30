@@ -255,7 +255,7 @@ C-01,10101,아동 가,입원,HYDRO,1,19,10:00|14:00
 
 ## 7. AI 명세
 
-- 모델: `gemini-2.0-flash-lite` (환경변수 `GEMINI_MODEL`로 교체 가능, Google AI Studio 무료 티어)
+- 모델: `claude-sonnet-4-6` (환경변수 `ANTHROPIC_MODEL`로 교체 가능)
 - 호출: **서버 라우트에서만.** 클라이언트 직접 호출 금지(키 노출)
 - 출력: JSON only. 백틱·서문 금지
 
@@ -321,7 +321,7 @@ C-01,10101,아동 가,입원,HYDRO,1,19,10:00|14:00
 | DB | **없음** | 상수로 대체 |
 | Auth | **없음** | |
 | Deploy | Vercel | |
-| AI | Gemini API (서버 프록시) | 무료 티어 |
+| AI | Claude API (서버 프록시) | |
 
 ```
 app/

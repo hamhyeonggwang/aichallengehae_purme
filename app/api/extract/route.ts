@@ -5,7 +5,7 @@ import { THERAPIES, DEFAULT_WAITLIST, OUTPATIENT_DAY } from '@/lib/mockData';
 export const runtime = 'nodejs';
 export const maxDuration = 15;
 
-const MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash-lite';
+const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6';
 
 // 서버에 도착하는 텍스트는 이미 익명화되어 있다. 모델이 보는 대상 식별자는 토큰뿐이다
 const TOKENS = Array.from(
@@ -63,9 +63,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '문자 내용을 입력해 주세요.' }, { status: 400 });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.error('GEMINI_API_KEY 미설정 — 폴백으로 전환');
+    console.error('ANTHROPIC_API_KEY 미설정 — 폴백으로 전환');
     return NextResponse.json(fallbackParse(text) satisfies ExtractResult);
   }
 
@@ -73,22 +73,21 @@ export async function POST(req: NextRequest) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-      {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: [{ role: 'user', parts: [{ text }] }],
-          generationConfig: { responseMimeType: 'application/json' },
-        }),
-        signal: controller.signal,
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
       },
-    );
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: text }],
+      }),
+      signal: controller.signal,
+    });
     clearTimeout(timer);
     if (!res.ok) {
       const body = await res.text().catch(() => '');
@@ -96,8 +95,9 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    const raw = ((data.candidates?.[0]?.content?.parts ?? []) as { text?: string }[])
-      .map((p) => p.text ?? '')
+    const raw = (data.content ?? [])
+      .filter((b: { type: string }) => b.type === 'text')
+      .map((b: { text: string }) => b.text)
       .join('')
       .replace(/```json|```/g, '')
       .trim();
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       source: 'ai',
     } satisfies ExtractResult);
   } catch (err) {
-    console.error('Gemini 추출 실패 — 폴백으로 전환:', err instanceof Error ? err.message : err);
+    console.error('Claude 추출 실패 — 폴백으로 전환:', err instanceof Error ? err.message : err);
     return NextResponse.json(fallbackParse(text) satisfies ExtractResult);
   }
 }
