@@ -53,7 +53,9 @@ L1 대비 이 프로젝트에서 더 엄격하게 적용한다.
 ### 구현 규칙
 
 - 주석은 한국어. 규칙 엔진의 정렬 조건에는 반드시 근거를 명시한다
-- 컴포넌트를 과분할하지 않는다. 단일 페이지 프로토타입이다
+- 컴포넌트를 과분할하지 않는다. 각 라우트 내부는 인라인 컴포넌트를 허용한다
+- 라우트는 `/prd`(랜딩·PRD 요약) · `/mvp`(MVP 범위) · `/app`(기존 단일 페이지 프로토타입) 3개로 고정한다.
+  라우트 추가는 새 요청 없이 확장하지 않는다(D1 상향 우선 — 2026-07-31 명시적 지정으로 단일 페이지 원칙을 무효화)
 - 상태관리 라이브러리를 도입하지 않는다. `useState`로 충분하다
 - `localStorage` / `sessionStorage`를 사용하지 않는다
 - Anthropic API 키를 클라이언트에서 호출하지 않는다. 서버 라우트 경유만 허용
@@ -99,10 +101,15 @@ docs/
   SPEC-PRIVACY.md         # 익명화·재식별 파이프라인
   DECISIONS.md            # 결정 기록 + Assumption Ledger
 app/
-  page.tsx                # 단일 페이지. 컴포넌트 인라인 허용
+  page.tsx                # 루트 — /prd로 리다이렉트
   layout.tsx · globals.css
+  prd/page.tsx · layout.tsx   # 1. 랜딩 · PRD 핵심 요약
+  mvp/page.tsx · layout.tsx   # 2. MVP 범위(만드는 것/만들지 않는 것)
+  app/page.tsx · layout.tsx   # 3. 기존 인터랙티브 프로토타입 (이전 루트 page.tsx)
   api/extract/route.ts    # Claude 프록시 + 폴백
 components/
+  SiteNav.tsx             # 1/2/3 라우트 네비게이션
+  SafetyBanner.tsx        # 가상 데이터 고지 배너 (3라우트 공용)
   PipelineTrace.tsx       # 실행 경로 시각화 (n8n 노드와 1:1)
 lib/
   mockData.ts             # 8종 치료 · 치료사 80 · 대기 명단
